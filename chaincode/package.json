@@ -1,0 +1,15 @@
+{
+	"name": "mychaincode",
+	"version": "1.0.0",
+	"description": "My first exciting chaincode implemented in node.js",
+	"engines": {
+		"node": ">=8.4.0",
+		"npm": ">=3.10.10"
+	},
+	"engine-strict": true,
+	"engineStrict": true,
+	"license": "Apache-2.0",
+	"dependencies": {
+		"fabric-shim": "file:./fabric-shim"
+	}
+}
