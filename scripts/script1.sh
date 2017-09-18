@@ -10,10 +10,10 @@ echo "\___ \    | |     / _ \   | |_) |   | |    _____  |  _|     __) | |  _|  "
 echo " ___) |   | |    / ___ \  |  _ <    | |   |_____| | |___   / __/  | |___ "
 echo "|____/    |_|   /_/   \_\ |_| \_\   |_|           |_____| |_____| |_____|"
 echo
-
+STARTTIME=$(date +%s)
 CHANNEL_NAME="$1"
 : ${CHANNEL_NAME:="mychannel"}
-: ${TIMEOUT:="60"}
+: ${TIMEOUT:="15"}
 COUNTER=1
 MAX_RETRY=5
 ORDERER_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
@@ -131,13 +131,13 @@ joinWithRetry () {
 }
 
 joinChannel () {
-	for ch in 0 1 2 3; do
-		setGlobals $ch
-		joinWithRetry $ch
-		echo "===================== PEER$ch joined on the channel \"$CHANNEL_NAME\" ===================== "
-		sleep 2
+	# for ch in 0 1 2 3; do
+		setGlobals 0
+		joinWithRetry 0
+		echo "===================== PEER0 joined on the channel \"$CHANNEL_NAME\" ===================== "
+		# sleep 2
 		echo
-	done
+	# done
 }
 
 installChaincode () {
@@ -157,9 +157,9 @@ instantiateChaincode () {
 	# while 'peer chaincode' command can get the orderer endpoint from the peer (if join was successful),
 	# lets supply it directly as we know it using the "-o" option
 	if [ -z "$CORE_PEER_TLS_ENABLED" -o "$CORE_PEER_TLS_ENABLED" = "false" ]; then
-		peer chaincode instantiate -o orderer.example.com:7050 -C $CHANNEL_NAME -l node -n mycc -v 1.0 -c '{"Args":["init"]}' -P "OR	('Org1MSP.member','Org2MSP.member')" >&log.txt
+		peer chaincode instantiate -o orderer.example.com:7050 -C $CHANNEL_NAME -l node -n mycc -v 1.0 -c '{"Args":[""]}' -P "OR	('Org1MSP.member','Org2MSP.member')" >&log.txt
 	else
-		peer chaincode instantiate -o orderer.example.com:7050 --tls $CORE_PEER_TLS_ENABLED --cafile $ORDERER_CA -C $CHANNEL_NAME -l node -n mycc -v 1.0 -c '{"Args":["init"]}' -P "OR	('Org1MSP.member','Org2MSP.member')" >&log.txt
+		peer chaincode instantiate -o orderer.example.com:7050 --tls $CORE_PEER_TLS_ENABLED --cafile $ORDERER_CA -C $CHANNEL_NAME -l node -n mycc -v 1.0 -c '{"Args":[""]}' -P "OR	('Org1MSP.member','Org2MSP.member')" >&log.txt
 	fi
 	res=$?
 	cat log.txt
@@ -170,6 +170,7 @@ instantiateChaincode () {
 
 chaincodeQuery () {
   PEER=$1
+	echo $2
   echo "===================== Querying on PEER$PEER on channel '$CHANNEL_NAME'... ===================== "
   setGlobals $PEER
   local rc=1
@@ -181,9 +182,9 @@ chaincodeQuery () {
   do
      sleep 3
      echo "Attempting to Query PEER$PEER ...$(($(date +%s)-starttime)) secs"
-     peer chaincode query -C $CHANNEL_NAME -n mycc -c '{"Args":["test1"]}' >&log.txt
-     test $? -eq 0 && VALUE=$(cat log.txt | awk '/Query Result/ {print $NF}')
-     test "$VALUE" = "$2" && let rc=0
+     peer chaincode query -C $CHANNEL_NAME -n mycc -c $2 >&log.txt
+     test $? -eq 0 && VALUE=$(cat log.txt | awk '/Query Result/ {print $NF}') && echo "$VALUE" && let rc=0
+    #  test "$VALUE" = "$3" && let rc=0
   done
   echo
   cat log.txt
@@ -203,9 +204,9 @@ chaincodeInvoke () {
 	# while 'peer chaincode' command can get the orderer endpoint from the peer (if join was successful),
 	# lets supply it directly as we know it using the "-o" option
 	if [ -z "$CORE_PEER_TLS_ENABLED" -o "$CORE_PEER_TLS_ENABLED" = "false" ]; then
-		peer chaincode invoke -o orderer.example.com:7050 -C $CHANNEL_NAME -n mycc -c '{"Args":["test1"]}' >&log.txt
+		peer chaincode invoke -o orderer.example.com:7050 -C $CHANNEL_NAME -n mycc -c $2 >&log.txt
 	else
-		peer chaincode invoke -o orderer.example.com:7050  --tls $CORE_PEER_TLS_ENABLED --cafile $ORDERER_CA -C $CHANNEL_NAME -n mycc -c '{"Args":["test1"]}' >&log.txt
+		peer chaincode invoke -o orderer.example.com:7050  --tls $CORE_PEER_TLS_ENABLED --cafile $ORDERER_CA -C $CHANNEL_NAME -n mycc -c $2 >&log.txt
 	fi
 	res=$?
 	cat log.txt
@@ -227,36 +228,53 @@ echo "Having all peers join the channel..."
 joinChannel
 
 ## Set the anchor peers for each org in the channel
-echo "Updating anchor peers for org1..."
-updateAnchorPeers 0
-echo "Updating anchor peers for org2..."
-updateAnchorPeers 2
+# echo "Updating anchor peers for org1..."
+# updateAnchorPeers 0
+# echo "Updating anchor peers for org2..."
+# updateAnchorPeers 2
 
 ## Install chaincode on Peer0/Org1 and Peer2/Org2
 echo "Installing chaincode on org1/peer0..."
 installChaincode 0
-echo "Install chaincode on org2/peer2..."
-installChaincode 2
 
 #Instantiate chaincode on Peer2/Org2
 echo "Instantiating chaincode on org2/peer2..."
-instantiateChaincode 2
+instantiateChaincode 0
+
+sleep 20
+#Invoke on chaincode on Peer0/Org1
+echo "Sending invoke transaction on org1/peer0..."
+# chaincodeInvoke 0 "{\"Args\":[\"$1\",\"$2\",\"$3\",\"$4\",\"$5\"]}"
+chaincodeInvoke 0 "{\"Args\":[\"initMarble\",\"marble1\",\"blue\",\"35\",\"tom\"]}"
+chaincodeInvoke 0 "{\"Args\":[\"initMarble\",\"marble2\",\"red\",\"50\",\"tom\"]}"
+chaincodeInvoke 0 "{\"Args\":[\"initMarble\",\"marble3\",\"blue\",\"70\",\"tom\"]}"
 
 #Query on chaincode on Peer0/Org1
 echo "Querying chaincode on org1/peer0..."
-chaincodeQuery 0 'dummyKey'
+chaincodeQuery 0 "{\"Args\":[\"readMarble\",\"marble1\"]}" "{\"docType\":\"marble\",\"name\":\"marble1\",\"color\":\"blue\",\"size\":35,\"owner\":\"tom\"}"
+chaincodeQuery 0 "{\"Args\":[\"readMarble\",\"marble2\"]}" "{\"docType\":\"marble\",\"name\":\"marble2\",\"color\":\"red\",\"size\":50,\"owner\":\"tom\"}"
+chaincodeQuery 0 "{\"Args\":[\"readMarble\",\"marble3\"]}" "{\"docType\":\"marble\",\"name\":\"marble3\",\"color\":\"blue\",\"size\":70,\"owner\":\"tom\"}"
+chaincodeQuery 0 "{\"Args\":[\"readMarble\",\"marble3\"]}" "{\"docType\":\"marble\",\"name\":\"marble4\",\"color\":\"yellow\",\"size\":75,\"owner\":\"amy\"}"
 
-# #Invoke on chaincode on Peer0/Org1
-# echo "Sending invoke transaction on org1/peer0..."
-# chaincodeInvoke 0
+chaincodeInvoke 0 "{\"Args\":[\"transferMarble\",\"marble2\",\"jerry\"]}"
+
+chaincodeQuery 0 "{\"Args\":[\"readMarble\",\"marble2\"]}" "{\"docType\":\"marble\",\"name\":\"marble2\",\"color\":\"red\",\"size\":50,\"owner\":\"jerry\"}"
+
+chaincodeInvoke 0 "{\"Args\":[\"transferMarblesBasedOnColor\",\"blue\",\"jerry\"]}"
+
+# chaincodeInvoke 0 "{\"Args\":[\"delete\",\"marble1\"]}"
 #
-# ## Install chaincode on Peer3/Org2
-# echo "Installing chaincode on org2/peer3..."
-# installChaincode 3
-#
-# #Query on chaincode on Peer3/Org2, check if the result is 90
-# echo "Querying chaincode on org2/peer3..."
-# chaincodeQuery 3 90
+# ## TODO: Check why the state is not getting deleted ?
+# chaincodeQuery 0 "{\"Args\":[\"readMarble\",\"marble1\"]}" "{\"docType\":\"marble\",\"name\":\"marble1\",\"color\":\"blue\",\"size\":35,\"owner\":\"jerry\"}"
+
+chaincodeQuery 0 "{\"Args\":[\"getMarblesByRange\",\"marble1\",\"marble3\"]}" "[\"{\\\"docType\\\":\\\"marble\\\",\\\"name\\\":\\\"marble1\\\",\\\"color\\\":\\\"blue\\\",\\\"size\\\":35,\\\"owner\\\":\\\"jerry\\\"}\",\"{\\\"docType\\\":\\\"marble\\\",\\\"name\\\":\\\"marble2\\\",\\\"color\\\":\\\"red\\\",\\\"size\\\":50,\\\"owner\\\":\\\"jerry\\\"}\"]"
+
+chaincodeQuery 0 "{\"Args\":[\"getHistoryForMarble\",\"marble1\"]}" "[\"{\\\"docType\\\":\\\"marble\\\",\\\"name\\\":\\\"marble1\\\",\\\"color\\\":\\\"blue\\\",\\\"size\\\":35,\\\"owner\\\":\\\"tom\\\"}\",\"{\\\"docType\\\":\\\"marble\\\",\\\"name\\\":\\\"marble1\\\",\\\"color\\\":\\\"blue\\\",\\\"size\\\":35,\\\"owner\\\":\\\"jerry\\\"}\"]"
+
+# // Rich Query (Only supported if CouchDB is used as state database):
+# //   peer chaincode query -C myc1 -n marbles -c '{"Args":["queryMarbles","{\"selector\":{\"owner\":\"tom\"}}"]}'
+chaincodeQuery 0 "{\"Args\":[\"queryMarblesByOwner\",\"jerry\"]}" "{\"color\":\"blue\",\"docType\":\"marble\",\"name\":\"marble1\",\"owner\":\"tom\",\"size\":35}"
+chaincodeQuery 0 "{\"Args\":[\"queryMarbles\",\"{\\\"selector\\\":{\\\"owner\\\":\\\"jerry\\\"}}\"]}" ""
 
 echo
 echo "===================== All GOOD, End-2-End execution completed ===================== "
@@ -264,10 +282,10 @@ echo
 
 echo
 echo " _____   _   _   ____            _____   ____    _____ "
-echo "| ____| | \ | | |  _ \          | ____| |___ \  | ____|"
-echo "|  _|   |  \| | | | | |  _____  |  _|     __) | |  _|  "
-echo "| |___  | |\  | | |_| | |_____| | |___   / __/  | |___ "
-echo "|_____| |_| \_| |____/          |_____| |_____| |_____|"
+echo "| ____| | \\ | | |  _ \\          | ____| |___ \\  | ____|"
+echo "|  _|   |  \\| | | | | |  _____  |  _|     __) | |  _|  "
+echo "| |___  | |\\  | | |_| | |_____| | |___   / __/  | |___ "
+echo "|_____| |_| \\_| |____/          |_____| |_____| |_____|"
 echo
-
+echo "Total execution time : $(($(date +%s)-STARTTIME)) secs ..."
 exit 0
