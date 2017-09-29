@@ -278,17 +278,20 @@ echo "Sending invoke transaction on org1/peer0..."
 # chaincodeInvoke 0 "{\"Args\":[\"$1\",\"$2\",\"$3\",\"$4\",\"$5\"]}"
 chaincodeInvoke 0 "{\"Args\":[\"createCar\",\"CAR1\",\"honda\",\"accord\",\"blue\",\"tom\"]}"
 chaincodeInvoke 0 "{\"Args\":[\"createCar\",\"CAR2\",\"toyota\",\"camry\",\"red\",\"harry\"]}"
-chaincodeInvoke 0 "{\"Args\":[\"createCar\",\"CAR3\",\"nissan\",\"altima\",\"blcka\",\"bob\"]}"
+chaincodeInvoke 0 "{\"Args\":[\"createCar\",\"CAR3\",\"nissan\",\"altima\",\"black\",\"bob\"]}"
+chaincodeInvoke 0 "{\"Args\":[\"createCar\",\"CAR4\",\"mazda\",\"3\",\"green\",\"amy\"]}"
 
 chaincodeInvoke1 0 "{\"Args\":[\"createOwner\",\"1\",\"tom\",\"tom@gmail.com\",\"NC\"]}"
 chaincodeInvoke1 0 "{\"Args\":[\"createOwner\",\"2\",\"harry\",\"harry@gmail.com\",\"SC\"]}"
 chaincodeInvoke1 0 "{\"Args\":[\"createOwner\",\"3\",\"bob\",\"bob@gmail.com\",\"TX\"]}"
+chaincodeInvoke1 0 "{\"Args\":[\"createOwner\",\"4\",\"amy\",\"amy@gmail.com\",\"TX\"]}"
 
 #Query on chaincode on Peer0/Org1
 echo "Querying chaincode on org1/peer0..."
 chaincodeQuery 0 "{\"Args\":[\"queryCar\",\"CAR1\"]}" "{\"docType\":\"marble\",\"name\":\"marble1\",\"color\":\"blue\",\"size\":35,\"owner\":\"tom\"}"
 chaincodeQuery 0 "{\"Args\":[\"queryCar\",\"CAR2\"]}" "{\"docType\":\"marble\",\"name\":\"marble2\",\"color\":\"red\",\"size\":50,\"owner\":\"tom\"}"
 chaincodeQuery 0 "{\"Args\":[\"queryCar\",\"CAR3\"]}" "{\"docType\":\"marble\",\"name\":\"marble3\",\"color\":\"blue\",\"size\":70,\"owner\":\"tom\"}"
+chaincodeQuery 0 "{\"Args\":[\"queryCar\",\"CAR4\"]}" "{\"docType\":\"marble\",\"name\":\"marble3\",\"color\":\"blue\",\"size\":70,\"owner\":\"tom\"}"
 
 chaincodeInvoke 0 "{\"Args\":[\"changeCarowner\",\"CAR2\",\"bob\"]}"
 
@@ -296,7 +299,7 @@ chaincodeQuery 0 "{\"Args\":[\"queryCar\",\"CAR2\"]}" "{\"docType\":\"marble\",\
 
 chaincodeInvoke 0 "{\"Args\":[\"transferCarsBasedOnMake\",\"honda\",\"bob\"]}"
 
-chaincodeInvoke 0 "{\"Args\":[\"delete\",\"CAR3\"]}"
+chaincodeInvoke 0 "{\"Args\":[\"delete\",\"CAR4\"]}"
 #
 # ## TODO: Check why the state is not getting deleted ?
 chaincodeQuery 0 "{\"Args\":[\"queryCar\",\"CAR3\"]}" "{\"docType\":\"marble\",\"name\":\"marble1\",\"color\":\"blue\",\"size\":35,\"owner\":\"jerry\"}"
